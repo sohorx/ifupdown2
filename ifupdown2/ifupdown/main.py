@@ -261,9 +261,14 @@ class Ifupdown2:
                                                                  interfacesfileformat=args.interfacesfileformat,
                                                                  withdefaults=args.withdefaults)
             # list implies all auto interfaces (this is how ifupdown behaves)
-            if args.list:
-                args.all = True
-            ifupdown_handle.query([qop], args.all, args.list, args.CLASS, iflist,
+            _all = False
+            if args.all and not args.CLASS:
+                args.CLASS = ['auto']
+            if args.list and not args.CLASS:
+                # TODO -l must be all and not only auto (-a) -> incompatible with ifupdown1
+                _all = True
+                args.CLASS = ['auto'] # XXX
+            ifupdown_handle.query([qop], _all, args.list, args.CLASS, iflist,
                                   excludepats=args.excludepats,
                                   printdependency=args.printdependency,
                                   format=args.format, type=args.type)

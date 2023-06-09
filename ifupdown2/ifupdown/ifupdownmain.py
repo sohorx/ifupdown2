@@ -1888,6 +1888,22 @@ class ifupdownMain:
                 return True
         return False
 
+    def _get_filtered_ifacenames_with_classes_bis(self, allow_classes, excludepats, ifacenames):
+        # if user has specified ifacelist and allow_classes
+        # filter non allowed classes interfaces 
+
+        filtered_ifacenames = [i for i in list(self.ifaceobjdict.keys())
+                               if self._iface_whitelisted(False, allow_classes,
+                                                          excludepats, i)]
+        if ifacenames:
+            filtered_ifacenames = set(filtered_ifacenames).intersection(ifacenames)
+
+        for intf in ifacenames:
+            for obj in self.get_ifaceobjs(intf) or []:
+                obj.blacklisted = False
+
+        return filtered_ifacenames
+
     def _get_filtered_ifacenames_with_classes(self, auto, allow_classes, excludepats, ifacenames):
         # if user has specified ifacelist and allow_classes
         # append the allow_classes interfaces to user
@@ -1979,14 +1995,24 @@ class ifupdownMain:
             if not ifupdownflags.flags.DRYRUN and self.flags.ADDONS_ENABLE:
                 self._save_state()
 
-    def query(self, ops, auto=False, format_list=False, allow_classes=None,
+    def query(self, ops, _all=False, format_list=False, allow_classes=None,
               ifacenames=None,
               excludepats=None, printdependency=None,
               format='native', type=None):
         """ query an interface """
 
+        self.logger.error(f'OLIVER _all {_all} ; classes {allow_classes} ; itf {ifacenames} ')
+
+        # TODO manage a real ALL mode (with classes or specific management)
+        auto = False
+        if _all:
+            pass
+            #allow_classes = ['auto']
+            #ifacenames = list(self.ifaceobjdict.keys())
+
         self.set_type(type)
 
+        self.logger.error(f'::{ifacenames}')
         # Let us forget internal squashing when it comes to
         # ifquery. It can surprise people relying of ifquery
         # output
@@ -2000,7 +2026,7 @@ class ifupdownMain:
 
         iface_read_ret = True
 
-        if auto:
+        if 'auto' in allow_classes:
             self.logger.debug('setting flag ALL')
             ifupdownflags.flags.ALL = True
             ifupdownflags.flags.WITH_DEPENDS = True
@@ -2022,8 +2048,10 @@ class ifupdownMain:
             # If iface list is given, always check if iface is present
             ifacenames = self._preprocess_ifacenames(ifacenames)
 
+        filtered_ifacenames = []
         if allow_classes:
-            filtered_ifacenames = self._get_filtered_ifacenames_with_classes(auto, allow_classes, excludepats, ifacenames)
+            filtered_ifacenames = self._get_filtered_ifacenames_with_classes_bis(allow_classes, excludepats, ifacenames)
+        self.logger.error(f'OLIVER filtered_ifacenames {filtered_ifacenames}')
 
         # if iface list not given by user, assume all from config file
         if not ifacenames: ifacenames = list(self.ifaceobjdict.keys())
@@ -2040,10 +2068,6 @@ class ifupdownMain:
                     excludepats, i
                 )
             ]
-
-        if not filtered_ifacenames:
-                raise Exception('no ifaces found matching ' +
-                        'given allow lists')
 
         self.populate_dependency_info(ops)
         if ops[0] == 'query-dependency' and printdependency:
