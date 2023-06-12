@@ -2026,7 +2026,7 @@ class ifupdownMain:
 
         iface_read_ret = True
 
-        if 'auto' in allow_classes:
+        if allow_classes and 'auto' in allow_classes:
             self.logger.debug('setting flag ALL')
             ifupdownflags.flags.ALL = True
             ifupdownflags.flags.WITH_DEPENDS = True
