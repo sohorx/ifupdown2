@@ -160,7 +160,7 @@ class networkInterfaces():
         allow_line = lines[cur_idx]
 
         words = re.split(self._ws_split_regex, allow_line)
-        if len(words) <= 1:
+        if len(words) <= 1 or '-' not in words[0]:
             raise Exception('invalid allow line \'%s\' at line %d'
                             %(allow_line, lineno))
 
